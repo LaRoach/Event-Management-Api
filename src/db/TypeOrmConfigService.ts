@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from "@nestjs/typeorm";
-import { Attendee } from "src/attendees/models/Attendee";
-import { Event } from "src/events/models/event";
-import { Organizer } from "src/organizers/models/organizer";
+import { Attendee } from "src/attendees/models/attendee.entity";
+import { Event } from "src/events/models/event.entity";
+import { Organizer } from "src/organizers/models/organizer.entity";
 
 @Injectable()
 export class TypeOrmConfigService implements TypeOrmOptionsFactory {

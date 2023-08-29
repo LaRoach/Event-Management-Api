@@ -1,5 +1,5 @@
-import { Event } from "src/events/models/event";
-import { Column, Entity, JoinColumn, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Event } from "src/events/models/event.entity";
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity()
 export class Organizer {

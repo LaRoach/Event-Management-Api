@@ -1,4 +1,4 @@
-import { Organizer } from "src/organizers/models/organizer";
+import { Organizer } from "src/organizers/models/organizer.entity";
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, JoinColumn } from 'typeorm';
 
 @Entity()

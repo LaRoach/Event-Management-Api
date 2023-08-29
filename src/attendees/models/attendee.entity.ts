@@ -1,4 +1,4 @@
-import { Event } from "src/events/models/event";
+import { Event } from "src/events/models/event.entity";
 import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity()
