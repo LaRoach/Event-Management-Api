@@ -1,5 +1,6 @@
-import { Controller, Delete, Get, HttpCode, Patch } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Patch, Post } from '@nestjs/common';
 import { EventsService } from '../services/events.service';
+import { EventCreateRequestDto } from '../models/eventCreateRequest.dto';
 
 @Controller('events')
 export class EventsController {
@@ -14,6 +15,11 @@ export class EventsController {
     @Get(':id')
     getEvent(): string {
         return this.eventsService.getEvent();
+    }
+
+    @Post()
+    createEvent(@Body() eventCreateRequestDto: EventCreateRequestDto): string {
+        return this.eventsService.createEvent();
     }
 
     @Patch(':id')

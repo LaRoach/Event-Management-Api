@@ -11,6 +11,10 @@ export class EventsService {
         return "Specific event details"
     }
 
+    createEvent(): string {
+        return "Created new event"
+    }
+
     updateEvent(): string {
         return "Update event"
     }

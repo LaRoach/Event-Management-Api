@@ -1,5 +1,7 @@
-import { Controller, Delete, Get, HttpCode, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Patch, Post } from '@nestjs/common';
 import { OrganizersService } from '../services/organizers.service';
+import { OrganizerRegisterRequestDto } from '../models/organizerRegisterRequest.dto';
+import { OrganizerLoginRequestDto } from '../models/organizerLoginRequest.dto';
 
 @Controller('organizers')
 export class OrganizersController {
@@ -7,12 +9,12 @@ export class OrganizersController {
     constructor(private readonly organizersService: OrganizersService) { }
 
     @Post('/register')
-    registerOrganizer(): string {
+    registerOrganizer(@Body() organizerRegisterRequestDto: OrganizerRegisterRequestDto): string {
         return this.organizersService.registerOrganizer();
     }
 
     @Post('/login')
-    loginOrganizer(): string {
+    loginOrganizer(@Body() organizerLoginRequestDto: OrganizerLoginRequestDto): string {
         return this.organizersService.loginOrganizer();
     }
 

@@ -1,5 +1,7 @@
-import { Controller, Delete, Get, HttpCode, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Patch, Post } from '@nestjs/common';
 import { AttendeesService } from '../services/attendees.service';
+import { AttendeeRegisterRequestDto } from '../models/attendeeRegisterRequest.dto';
+import { AttendeeLoginRequestDto } from '../models/attendeeLoginRequest.dto';
 
 @Controller('attendees')
 export class AttendeesController {
@@ -7,12 +9,12 @@ export class AttendeesController {
     constructor(private readonly attendeesService: AttendeesService) { }
 
     @Post('/register')
-    registerAttendee(): string {
+    registerAttendee(@Body() attendeeRegisterRequestDto: AttendeeRegisterRequestDto): string {
         return this.attendeesService.registerAttendee();
     }
 
     @Post('/login')
-    loginAttendee(): string {
+    loginAttendee(@Body() attendeeLoginRequestDto: AttendeeLoginRequestDto): string {
         return this.attendeesService.loginAttendee();
     }
 
