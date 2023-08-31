@@ -1,10 +1,12 @@
-import { IsDate, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import { IsDate, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 export class EventCreateRequestDto {
 
     @IsNotEmpty()
+    @IsString()
     name: string
 
     @IsOptional()
+    @IsString()
     description: string
 
     @IsNotEmpty()
@@ -12,6 +14,7 @@ export class EventCreateRequestDto {
     date: Date
 
     @IsNotEmpty()
+    @IsString()
     location: string
 
     @IsNotEmpty()
