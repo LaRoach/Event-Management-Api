@@ -1,9 +1,11 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpException, HttpStatus, Param, ParseIntPipe, Patch, Post, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpException, HttpStatus, Param, ParseIntPipe, Patch, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { OrganizersService } from '../services/organizers.service';
 import { OrganizerRegisterRequestDto } from '../models/organizerRegisterRequest.dto';
-import { OrganizerLoginRequestDto } from '../models/organizerLoginRequest.dto';
 import { OrganizerUpdateRequestDto } from '../models/organizerUpdateRequest.dto';
-import { Response } from 'express';
+import { Request, Response } from 'express';
+import { OrganizerValidateResponseDto } from '../models/organizerValidateResponse.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { CurrentUser } from 'src/utils/currentUser.decorator';
 
 @Controller('organizers')
 export class OrganizersController {
@@ -11,9 +13,9 @@ export class OrganizersController {
     constructor(private readonly organizersService: OrganizersService) { }
 
     @Post('/register')
-    registerOrganizer(@Body() organizerRegisterRequestDto: OrganizerRegisterRequestDto): string {
+    registerOrganizer(@Body() organizerRegisterRequestDto: OrganizerRegisterRequestDto) {
         if (!organizerRegisterRequestDto.email || !organizerRegisterRequestDto.password || !organizerRegisterRequestDto.confirmPassword ||
-            !organizerRegisterRequestDto.firstName || organizerRegisterRequestDto.lastName) {
+            !organizerRegisterRequestDto.firstName || !organizerRegisterRequestDto.lastName) {
             throw new HttpException('Required fields not provided', HttpStatus.BAD_REQUEST);
         }
 
@@ -21,36 +23,41 @@ export class OrganizersController {
             throw new HttpException('Password and Confirm Password does not match', HttpStatus.BAD_REQUEST);
         }
 
-        return this.organizersService.registerOrganizer();
+        return this.organizersService.registerOrganizer(organizerRegisterRequestDto);
     }
 
+    @UseGuards(AuthGuard('organizer-local'))
     @Post('/login')
-    loginOrganizer(@Body() organizerLoginRequestDto: OrganizerLoginRequestDto): string {
-
-        if (!organizerLoginRequestDto.email || !organizerLoginRequestDto.password) {
-            throw new HttpException('Required fields not provided', HttpStatus.BAD_REQUEST);
-        }
-
-        return this.organizersService.loginOrganizer();
+    async loginOrganizer(@CurrentUser() organizerValidateResponseDto: OrganizerValidateResponseDto) {
+        return { organizerEmail: organizerValidateResponseDto.email, token: await this.organizersService.loginOrganizer(organizerValidateResponseDto) };
     }
 
-    @Get(':id')
-    getOrganizer(@Param('id', ParseIntPipe) id: number): string {
-        return this.organizersService.getOrganizer();
+    @UseGuards(AuthGuard('organizer-jwt'))
+    @Get('/profile')
+    async getOrganizerProfile(@CurrentUser(ParseIntPipe) organizerId: number) {
+        return await this.organizersService.getOrganizer(organizerId);
     }
 
+    @UseGuards(AuthGuard('organizer-jwt'))
     @Patch(':id')
     @HttpCode(204)
-    updateOrganizer(@Param('id', ParseIntPipe) id: number, @Body() organizerUpdateRequestDto: OrganizerUpdateRequestDto, @Res() res: Response) {
+    async updateOrganizer(@Param('id', ParseIntPipe) id: number, @CurrentUser(ParseIntPipe) organizerId: number, @Body() organizerUpdateRequestDto: OrganizerUpdateRequestDto) {
         if (!organizerUpdateRequestDto.firstName && !organizerUpdateRequestDto.lastName) {
-            return res.sendStatus(204);
+            return;
         }
-        return this.organizersService.updateOrganizer();
+        if (id !== organizerId) {
+            throw new HttpException('You do no have permission to edit this organizer\'s details', HttpStatus.FORBIDDEN);
+        }
+        await this.organizersService.updateOrganizer(organizerId, organizerUpdateRequestDto);
     }
 
+    @UseGuards(AuthGuard('organizer-jwt'))
     @Delete(':id')
     @HttpCode(204)
-    deleteOrganizer(@Param('id', ParseIntPipe) id: number): string {
-        return this.organizersService.deleteOrganizer();
+    async deleteOrganizer(@Param('id', ParseIntPipe) id: number, @CurrentUser(ParseIntPipe) organizerId: number) {
+        if (id !== organizerId) {
+            throw new HttpException('You do no have permission to delete this organizer\'s details', HttpStatus.FORBIDDEN);
+        }
+        await this.organizersService.deleteOrganizer(organizerId);
     }
 }

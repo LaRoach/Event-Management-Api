@@ -7,11 +7,12 @@ import { EventsModule } from './events/events.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TypeOrmConfigService } from './db/TypeOrmConfigService';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [TypeOrmModule.forRootAsync({
     useClass: TypeOrmConfigService,
-  }), ConfigModule.forRoot({ isGlobal: true }), OrganizersModule, AttendeesModule, EventsModule],
+  }), ConfigModule.forRoot({ isGlobal: true }), OrganizersModule, AttendeesModule, EventsModule, AuthModule],
   controllers: [AppController],
   providers: [AppService],
 })
