@@ -3,7 +3,6 @@ import { AuthService } from './services/auth.service';
 import { PassportModule } from '@nestjs/passport';
 import { OrganizersModule } from 'src/organizers/organizers.module';
 import { AttendeesModule } from 'src/attendees/attendees.module';
-import { EventsModule } from 'src/events/events.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Organizer } from 'src/organizers/models/organizer.entity';
 import { LocalOrganizerStrategy } from './strategies/organizers/local.organizer.strategy';

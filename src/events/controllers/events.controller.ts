@@ -1,8 +1,9 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, ParseIntPipe, HttpException, HttpStatus, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, ParseIntPipe, HttpException, HttpStatus, Res, UseGuards } from '@nestjs/common';
 import { EventsService } from '../services/events.service';
 import { EventCreateRequestDto } from '../models/eventCreateRequest.dto';
 import { EventUpdateRequestDto } from '../models/eventUpdateRequest.dto';
-import { Response } from 'express';
+import { AuthGuard } from '@nestjs/passport';
+import { CurrentUser } from 'src/utils/currentUser.decorator';
 
 @Controller('events')
 export class EventsController {
@@ -10,46 +11,72 @@ export class EventsController {
     constructor(private readonly eventsService: EventsService) { }
 
     @Get()
-    getEvents(): string {
-        return this.eventsService.getEvents();
+    async getEvents() {
+        return await this.eventsService.getEvents();
     }
 
     @Get(':id')
-    getEvent(@Param('id', ParseIntPipe) id: number): string {
-        return this.eventsService.getEvent();
+    async getEvent(@Param('id', ParseIntPipe) id: number) {
+        return await this.eventsService.getEvent(id);
     }
 
+    @UseGuards(AuthGuard('organizer-jwt'))
     @Post()
-    createEvent(@Body() eventCreateRequestDto: EventCreateRequestDto): string {
+    createEvent(@CurrentUser(ParseIntPipe) organizerId: number, @Body() eventCreateRequestDto: EventCreateRequestDto) {
         if (!eventCreateRequestDto.name || !eventCreateRequestDto.description || !eventCreateRequestDto.date ||
             !eventCreateRequestDto.location || eventCreateRequestDto.maxAttendents) {
             throw new HttpException('Required fields not provided', HttpStatus.BAD_REQUEST);
         }
-
         if (eventCreateRequestDto.date < new Date()) {
             throw new HttpException('Date provided has already passed', HttpStatus.BAD_REQUEST);
         }
-        return this.eventsService.createEvent();
+        if (eventCreateRequestDto.maxAttendents <= 0) {
+            throw new HttpException('Max attendents must be greater than 0', HttpStatus.BAD_REQUEST);
+        }
+        return this.eventsService.createEvent(organizerId, eventCreateRequestDto);
     }
 
+    @UseGuards(AuthGuard('organizer-jwt'))
     @Patch(':id')
     @HttpCode(204)
-    updateEvent(@Param('id', ParseIntPipe) id: number, @Body() eventUpdateRequestDto: EventUpdateRequestDto, @Res() res: Response) {
+    async updateEvent(@Param('id', ParseIntPipe) id: number, @CurrentUser(ParseIntPipe) organizerId: number, @Body() eventUpdateRequestDto: EventUpdateRequestDto) {
         if (!eventUpdateRequestDto.name && !eventUpdateRequestDto.description && !eventUpdateRequestDto.date
             && !eventUpdateRequestDto.location && !eventUpdateRequestDto.maxAttendents) {
-            return res.sendStatus(204);
+            return;
         }
-
         if (eventUpdateRequestDto.date && eventUpdateRequestDto.date < new Date()) {
             throw new HttpException('Date provided has already passed', HttpStatus.BAD_REQUEST);
         }
+        if (eventUpdateRequestDto.maxAttendents <= 0) {
+            throw new HttpException('Max attendents must be greater than 0', HttpStatus.BAD_REQUEST);
+        }
 
-        return this.eventsService.updateEvent();
+        const event = await this.eventsService.getEvent(id);
+        if (!event) {
+            throw new HttpException('Event not found', HttpStatus.NOT_FOUND);
+        }
+
+        if (event.organizer.id === organizerId) {
+            return await this.eventsService.updateEvent(event, eventUpdateRequestDto);
+        }
+        else {
+            throw new HttpException('You do not have permission to edit this event', HttpStatus.FORBIDDEN);
+        }
     }
 
+    @UseGuards(AuthGuard('organizer-jwt'))
     @Delete(':id')
     @HttpCode(204)
-    deleteEvent(@Param('id', ParseIntPipe) id: number): string {
-        return this.eventsService.deleteEvent();
+    async deleteEvent(@Param('id', ParseIntPipe) id: number, @CurrentUser(ParseIntPipe) organizerId: number) {
+        const event = await this.eventsService.getEvent(id);
+        if (!event) {
+            throw new HttpException('Event not found', HttpStatus.NOT_FOUND);
+        }
+        if (event.organizer.id === organizerId) {
+            return await this.eventsService.deleteEvent(event);
+        }
+        else {
+            throw new HttpException('You do not have permission to delete this event', HttpStatus.FORBIDDEN);
+        }
     }
 }

@@ -1,6 +1,5 @@
-import { PartialType } from "@nestjs/mapped-types"
-import { IsDate, IsNumber, IsOptional, IsString } from "class-validator"
-import { EventCreateRequestDto } from "./eventCreateRequest.dto"
+import { PartialType } from '@nestjs/mapped-types'
+import { EventCreateRequestDto } from './eventCreateRequest.dto'
 
 export class EventUpdateRequestDto extends PartialType(EventCreateRequestDto) {
 

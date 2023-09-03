@@ -12,7 +12,7 @@ export class AttendeesController {
     constructor(private readonly attendeesService: AttendeesService) { }
 
     @Post('/register')
-    registerAttendee(@Body() attendeeRegisterRequestDto: AttendeeRegisterRequestDto) {
+    async registerAttendee(@Body() attendeeRegisterRequestDto: AttendeeRegisterRequestDto) {
         if (!attendeeRegisterRequestDto.email || !attendeeRegisterRequestDto.password || !attendeeRegisterRequestDto.confirmPassword ||
             !attendeeRegisterRequestDto.firstName || !attendeeRegisterRequestDto.lastName) {
             throw new HttpException('Required fields not provided', HttpStatus.BAD_REQUEST);
@@ -22,7 +22,7 @@ export class AttendeesController {
             throw new HttpException('Password and Confirm Password does not match', HttpStatus.BAD_REQUEST);
         }
 
-        return this.attendeesService.registerAttendee(attendeeRegisterRequestDto);
+        return await this.attendeesService.registerAttendee(attendeeRegisterRequestDto);
     }
 
     @UseGuards(AuthGuard('attendee-local'))
@@ -38,25 +38,19 @@ export class AttendeesController {
     }
 
     @UseGuards(AuthGuard('attendee-jwt'))
-    @Patch(':id')
+    @Patch()
     @HttpCode(204)
-    async updateAttendee(@Param('id', ParseIntPipe) id: number, @CurrentUser(ParseIntPipe) attendeeId: number, @Body() attendeeUpdateRequestDto: AttendeeUpdateRequestDto) {
+    async updateAttendee(@CurrentUser(ParseIntPipe) attendeeId: number, @Body() attendeeUpdateRequestDto: AttendeeUpdateRequestDto) {
         if (!attendeeUpdateRequestDto.firstName && !attendeeUpdateRequestDto.lastName) {
             return;
-        }
-        if (id !== attendeeId) {
-            throw new HttpException('You do no have permission to edit this attendee\'s details', HttpStatus.FORBIDDEN);
         }
         await this.attendeesService.updateAttendee(attendeeId, attendeeUpdateRequestDto);
     }
 
     @UseGuards(AuthGuard('attendee-jwt'))
-    @Delete(':id')
+    @Delete()
     @HttpCode(204)
-    async deleteAttendee(@Param('id', ParseIntPipe) id: number, @CurrentUser(ParseIntPipe) attendeeId: number) {
-        if (id !== attendeeId) {
-            throw new HttpException('You do no have permission to delete this attendee\'s details', HttpStatus.FORBIDDEN);
-        }
+    async deleteAttendee(@CurrentUser(ParseIntPipe) attendeeId: number) {
         await this.attendeesService.deleteAttendee(attendeeId);
     }
 }
