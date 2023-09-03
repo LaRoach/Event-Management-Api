@@ -8,16 +8,16 @@ export class Attendee {
     id: number;
 
     @Column()
-    email: number;
+    email: string;
 
     @Column()
-    password: number;
+    password: string;
 
     @Column()
-    firstName: number;
+    firstName: string;
 
     @Column()
-    lastName: number;
+    lastName: string;
 
     @Column({ nullable: true })
     displayPic: string

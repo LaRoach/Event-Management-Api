@@ -4,20 +4,14 @@ import { OrganizersService } from './services/organizers.service';
 import { AuthService } from 'src/auth/services/auth.service';
 import { Organizer } from './models/organizer.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { JwtModule, JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
+import { Attendee } from 'src/attendees/models/attendee.entity';
+import { JwtModule } from '@nestjs/jwt';
+import { JwtConfigService } from 'src/jwt/JwtConfigService';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Organizer]),
+  imports: [TypeOrmModule.forFeature([Organizer, Attendee]),
   JwtModule.registerAsync({
-    inject: [ConfigService],
-    useFactory: async (configService: ConfigService) => {
-      return {
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '1d' },
-        global: true
-      };
-    },
+    useClass: JwtConfigService
   })],
   controllers: [OrganizersController],
   providers: [OrganizersService, AuthService]

@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { Repository, UpdateResult } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Organizer } from '../models/organizer.entity';
-import { OrganizerRegisterType } from '../models/organizer.type';
+import { OrganizerRegisterType } from '../models/organizer.types';
 import { AuthService } from '../../auth/services/auth.service';
 import { OrganizerValidateResponseDto } from '../models/organizerValidateResponse.dto';
 import { InjectRepository } from '@nestjs/typeorm';

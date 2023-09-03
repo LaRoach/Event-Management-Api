@@ -5,11 +5,14 @@ import { Repository } from 'typeorm';
 import { OrganizerValidateResponseDto } from 'src/organizers/models/organizerValidateResponse.dto';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
+import { AttendeeValidateResponseDto } from 'src/attendees/models/attendeeValidateReponse.dto';
+import { Attendee } from 'src/attendees/models/attendee.entity';
 
 @Injectable()
 export class AuthService {
 
-    constructor(@InjectRepository(Organizer) private readonly organizerRepository: Repository<Organizer>, private readonly jwtService: JwtService) { }
+    constructor(@InjectRepository(Organizer) private readonly organizerRepository: Repository<Organizer>,
+        @InjectRepository(Attendee) private readonly attendeeRepository: Repository<Attendee>, private readonly jwtService: JwtService) { }
 
     async validateOrganizer(email: string, password: string): Promise<OrganizerValidateResponseDto> {
         const organizer = await this.organizerRepository.findOne({
@@ -18,6 +21,18 @@ export class AuthService {
 
         if (organizer && await bcrypt.compare(password, organizer.password)) {
             const { password, events, displayPic, ...result } = organizer;
+            return result;
+        }
+        return null;
+    }
+
+    async validateAttendee(email: string, password: string): Promise<AttendeeValidateResponseDto> {
+        const attendee = await this.attendeeRepository.findOne({
+            where: { email: email }
+        });
+
+        if (attendee && await bcrypt.compare(password, attendee.password)) {
+            const { password, events, displayPic, ...result } = attendee;
             return result;
         }
         return null;
@@ -35,7 +50,11 @@ export class AuthService {
         return await this.jwtService.signAsync(payload);
     }
 
-    async createJwtTokenforAttendee() {
-
+    async createJwtTokenforAttendee(attendeeValidateResponseDto: AttendeeValidateResponseDto): Promise<string> {
+        const payload = {
+            sub: attendeeValidateResponseDto.id, email: attendeeValidateResponseDto.email, firstName: attendeeValidateResponseDto.firstName,
+            lastName: attendeeValidateResponseDto.lastName, role: 'attendee'
+        };
+        return await this.jwtService.signAsync(payload);
     }
 }

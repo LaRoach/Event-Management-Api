@@ -1,11 +1,10 @@
 import { Body, Controller, Delete, Get, HttpCode, Patch, Post, ParseIntPipe, Param, HttpException, HttpStatus, Res, UseGuards } from '@nestjs/common';
 import { AttendeesService } from '../services/attendees.service';
 import { AttendeeRegisterRequestDto } from '../models/attendeeRegisterRequest.dto';
-import { AttendeeLoginRequestDto } from '../models/attendeeLoginRequest.dto';
 import { AttendeeUpdateRequestDto } from '../models/attendeeUpdateRequest.dto';
-import { Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { CurrentUser } from 'src/utils/currentUser.decorator';
+import { AttendeeValidateResponseDto } from '../models/attendeeValidateReponse.dto';
 
 @Controller('attendees')
 export class AttendeesController {
