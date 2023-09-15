@@ -21,18 +21,4 @@ export class Attendee {
 
     @Column({ nullable: true })
     displayPic: string
-
-    @ManyToMany(() => Event)
-    @JoinTable({
-        name: "attendees_events",
-        joinColumn: {
-            name: "attendee_id",
-            referencedColumnName: "id"
-        },
-        inverseJoinColumn: {
-            name: "event_id",
-            referencedColumnName: "id"
-        }
-    })
-    events: Event[]
 }

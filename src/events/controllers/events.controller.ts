@@ -1,10 +1,12 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, ParseIntPipe, HttpException, HttpStatus, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, ParseIntPipe, HttpException, HttpStatus, UseGuards, Put } from '@nestjs/common';
 import { EventsService } from '../services/events.service';
 import { EventCreateRequestDto } from '../models/eventCreateRequest.dto';
 import { EventUpdateRequestDto } from '../models/eventUpdateRequest.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { CurrentUser } from 'src/utils/currentUser.decorator';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiBearerAuth()
 @Controller('events')
 export class EventsController {
 
@@ -19,6 +21,7 @@ export class EventsController {
     async getEvent(@Param('id', ParseIntPipe) id: number) {
         return await this.eventsService.getEvent(id);
     }
+
 
     @UseGuards(AuthGuard('organizer-jwt'))
     @Post()
@@ -78,5 +81,33 @@ export class EventsController {
         else {
             throw new HttpException('You do not have permission to delete this event', HttpStatus.FORBIDDEN);
         }
+    }
+
+    @Get('/organizer/:organizerName')
+    async filterEventsByOrganizerName(@Param('organizerName') organizerName: string) {
+        return await this.eventsService.getEventsByOrganizerName(organizerName);
+    }
+
+    @Get('/location/:location')
+    async filterEventsByLocation(@Param('location') location: string) {
+        return await this.eventsService.getEventsByLocation(location);
+    }
+
+    @Get('/attendeeCount/:id')
+    async getCurrentAttendeeCountForEvent(@Param('id', ParseIntPipe) id: number) {
+        return await this.eventsService.getAttendeeCountForEvent(id);
+    }
+
+    @UseGuards(AuthGuard('organizer-jwt'))
+    @Get('/attendeeEmail/:id')
+    async getAttendeeEmailForEvent(@Param('id', ParseIntPipe) id: number) {
+        return await this.eventsService.getAttendeeEmailForEvent(id);
+    }
+
+    @UseGuards(AuthGuard('attendee-jwt'))
+    @Put('/:id/attendee//signUp')
+    @HttpCode(204)
+    async signUpAttendeeToEvent(@CurrentUser(ParseIntPipe) attendeeId: number, @Param('id', ParseIntPipe) id: number) {
+        await this.eventsService.signUpAttendeeToEvent(attendeeId, id);
     }
 }

@@ -32,7 +32,7 @@ export class AttendeesService {
         if (!attendee) {
             throw new HttpException('No attendee profile found', HttpStatus.NOT_FOUND);
         }
-        const { password, events, ...result } = attendee;
+        const { password, ...result } = attendee;
         return result;
     }
 

@@ -1,7 +1,6 @@
 import { IsEmail, IsNotEmpty, Length } from "class-validator";
 
 export class AttendeeRegisterRequestDto {
-
     @IsEmail()
     @IsNotEmpty()
     email: string;

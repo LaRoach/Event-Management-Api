@@ -1,11 +1,14 @@
-import { Body, Controller, Delete, Get, HttpCode, Patch, Post, ParseIntPipe, Param, HttpException, HttpStatus, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Patch, Post, ParseIntPipe, Param, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
 import { AttendeesService } from '../services/attendees.service';
 import { AttendeeRegisterRequestDto } from '../models/attendeeRegisterRequest.dto';
 import { AttendeeUpdateRequestDto } from '../models/attendeeUpdateRequest.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { CurrentUser } from 'src/utils/currentUser.decorator';
 import { AttendeeValidateResponseDto } from '../models/attendeeValidateReponse.dto';
+import { ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import { AttendeeLoginRequestDto } from '../models/attendeeLoginRequest.dto';
 
+@ApiBearerAuth()
 @Controller('attendees')
 export class AttendeesController {
 
@@ -25,6 +28,7 @@ export class AttendeesController {
         return await this.attendeesService.registerAttendee(attendeeRegisterRequestDto);
     }
 
+    @ApiBody({ type: AttendeeLoginRequestDto })
     @UseGuards(AuthGuard('attendee-local'))
     @Post('/login')
     async loginAttendee(@CurrentUser() attendeeValidateResponseDto: AttendeeValidateResponseDto) {

@@ -14,10 +14,7 @@ export class Organizer {
     password: string;
 
     @Column()
-    firstName: string;
-
-    @Column()
-    lastName: string;
+    name: string;
 
     @Column({ nullable: true })
     displayPic: string

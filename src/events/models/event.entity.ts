@@ -1,5 +1,6 @@
+import { Attendee } from "src/attendees/models/attendee.entity";
 import { Organizer } from "src/organizers/models/organizer.entity";
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, JoinColumn } from 'typeorm';
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, JoinColumn, ManyToMany, JoinTable } from 'typeorm';
 
 @Entity()
 export class Event {
@@ -25,4 +26,18 @@ export class Event {
     @ManyToOne(() => Organizer, (organizer) => organizer.events, { nullable: false })
     @JoinColumn({ name: 'organizerId' })
     organizer: Organizer
+
+    @ManyToMany(() => Event)
+    @JoinTable({
+        name: "attendees_events",
+        joinColumn: {
+            name: "attendee_id",
+            referencedColumnName: "id"
+        },
+        inverseJoinColumn: {
+            name: "event_id",
+            referencedColumnName: "id"
+        }
+    })
+    attendees: Attendee[]
 }

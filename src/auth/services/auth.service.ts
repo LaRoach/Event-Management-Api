@@ -32,7 +32,7 @@ export class AuthService {
         });
 
         if (attendee && await bcrypt.compare(password, attendee.password)) {
-            const { password, events, displayPic, ...result } = attendee;
+            const { password, displayPic, ...result } = attendee;
             return result;
         }
         return null;
@@ -44,8 +44,7 @@ export class AuthService {
 
     async createJwtTokenforOrganizer(organizerValidateResponseDto: OrganizerValidateResponseDto): Promise<string> {
         const payload = {
-            sub: organizerValidateResponseDto.id, email: organizerValidateResponseDto.email, firstName: organizerValidateResponseDto.firstName,
-            lastName: organizerValidateResponseDto.lastName, role: 'organizer'
+            sub: organizerValidateResponseDto.id, email: organizerValidateResponseDto.email, name: organizerValidateResponseDto.name, role: 'organizer'
         };
         return await this.jwtService.signAsync(payload);
     }

@@ -13,10 +13,6 @@ export class OrganizerRegisterRequestDto {
     confirmPassword: string;
 
     @IsNotEmpty()
-    @Length(1, 75)
-    firstName: string;
-
-    @IsNotEmpty()
-    @Length(1, 75)
-    lastName: string;
+    @Length(1, 150)
+    name: string;
 }
