@@ -1,12 +1,13 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpException, HttpStatus, ParseIntPipe, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpException, HttpStatus, Param, ParseFilePipeBuilder, ParseIntPipe, Patch, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { OrganizersService } from '../services/organizers.service';
 import { OrganizerRegisterRequestDto } from '../models/organizerRegisterRequest.dto';
 import { OrganizerUpdateRequestDto } from '../models/organizerUpdateRequest.dto';
 import { OrganizerValidateResponseDto } from '../models/organizerValidateResponse.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { CurrentUser } from 'src/utils/currentUser.decorator';
-import { ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
 import { OrganizerLoginRequestDto } from '../models/organizerLoginRequest.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiBearerAuth()
 @Controller('organizers')
@@ -42,12 +43,17 @@ export class OrganizersController {
     }
 
     @UseGuards(AuthGuard('organizer-jwt'))
+    @UseInterceptors(FileInterceptor('displayPic'))
+    @ApiConsumes('multipart/form-data')
     @Patch()
     @HttpCode(204)
-    async updateOrganizer(@CurrentUser(ParseIntPipe) organizerId: number, @Body() organizerUpdateRequestDto: OrganizerUpdateRequestDto) {
-        if (!organizerUpdateRequestDto.name) {
+    async updateOrganizer(@CurrentUser(ParseIntPipe) organizerId: number, @Body() organizerUpdateRequestDto: OrganizerUpdateRequestDto, @UploadedFile(
+        new ParseFilePipeBuilder().addFileTypeValidator({ fileType: '\.(jpg|jpeg|png|bmp|gif)$' }).addMaxSizeValidator({ maxSize: 3000000 }).build({ errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY })
+    ) displayPic: Express.Multer.File) {
+        if (!organizerUpdateRequestDto.name && !displayPic) {
             return;
         }
+        organizerUpdateRequestDto.displayPic = displayPic;
         await this.organizersService.updateOrganizer(organizerId, organizerUpdateRequestDto);
     }
 
@@ -59,8 +65,11 @@ export class OrganizersController {
     }
 
     @UseGuards(AuthGuard('organizer-jwt'))
-    @Get('/checkWeatherForecast')
-    async getWeatherForecast() {
-        return "Weather looks amazing today!";
+    @Get('/checkWeatherForecast/:city')
+    async getWeatherForecast(@Param('city') city: string) {
+        if (!city) {
+            throw new HttpException('City not specified', HttpStatus.BAD_REQUEST);
+        }
+        return await this.organizersService.checkWeatherForecast(city);
     }
 }

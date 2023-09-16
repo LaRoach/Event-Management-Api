@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, UploadedFile } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { Organizer } from '../models/organizer.entity';
 import { OrganizerRegisterType } from '../models/organizer.types';
@@ -7,10 +7,22 @@ import { OrganizerValidateResponseDto } from '../models/organizerValidateRespons
 import { InjectRepository } from '@nestjs/typeorm';
 import { OrganizerGetResponseDto } from '../models/organizerGetResponse.dto';
 import { OrganizerUpdateRequestDto } from '../models/organizerUpdateRequest.dto';
+import { HttpService } from '@nestjs/axios';
+import { catchError } from 'rxjs';
+import { AxiosError } from 'axios';
+import { ConfigService } from '@nestjs/config';
+import { OrganizerUpdateRequest } from '../models/organizerUpdateRequest';
+import { S3 } from 'aws-sdk';
+
 @Injectable()
 export class OrganizersService {
 
-    constructor(@InjectRepository(Organizer) private readonly organizerRepository: Repository<Organizer>, private readonly authService: AuthService) { }
+    private readonly s3Client = new S3({
+        region: this.configService.getOrThrow<string>('AWS_S3_REGION')
+    });
+
+    constructor(@InjectRepository(Organizer) private readonly organizerRepository: Repository<Organizer>, private readonly authService: AuthService, private readonly httpService: HttpService,
+        private readonly configService: ConfigService) { }
 
     async registerOrganizer(organizerRegisterType: OrganizerRegisterType) {
         organizerRegisterType.password = await this.authService.hashPassword(organizerRegisterType.password);
@@ -42,7 +54,22 @@ export class OrganizersService {
         if (!organizer) {
             throw new HttpException('Organizer not found', HttpStatus.NOT_FOUND);
         }
-        await this.organizerRepository.save({ ...organizer, ...organizerUpdateRequestDto });
+
+        const organizerUpdate = new OrganizerUpdateRequest();
+        organizerUpdate.name = organizerUpdateRequestDto.name;
+
+        //save file to AWS if available
+        if (organizerUpdateRequestDto.displayPic) {
+            const s3UploadResult = await this.s3Client.upload({
+                Bucket: this.configService.getOrThrow<string>('AWS_S3_ORGANIZER_BUCKET'),
+                Key: `${organizer.id}_${organizer.email}_profile.${organizerUpdateRequestDto.displayPic.filename.slice(organizerUpdateRequestDto.displayPic.originalname.lastIndexOf('.') + 1)}`,
+                Body: organizerUpdateRequestDto.displayPic.buffer
+            }).promise().catch((error) => {
+                throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
+            });
+            organizerUpdate.displayPic = s3UploadResult.Location;
+        }
+        await this.organizerRepository.save({ ...organizer, ...organizerUpdate });
     }
 
     async deleteOrganizer(organizerId: number) {
@@ -53,5 +80,12 @@ export class OrganizersService {
             throw new HttpException('Organizer not found', HttpStatus.NOT_FOUND);
         }
         await this.organizerRepository.remove(organizer);
+    }
+
+    async checkWeatherForecast(city: string) {
+        return this.httpService.get<string[]>(`http://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${this.configService.getOrThrow<string>('WEATHER_APIKEY')}`).pipe(
+            catchError((error: AxiosError) => {
+                throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+            }));
     }
 }

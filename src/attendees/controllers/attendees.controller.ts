@@ -1,12 +1,13 @@
-import { Body, Controller, Delete, Get, HttpCode, Patch, Post, ParseIntPipe, Param, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Patch, Post, ParseIntPipe, HttpException, HttpStatus, UseGuards, UseInterceptors, UploadedFile, ParseFilePipeBuilder } from '@nestjs/common';
 import { AttendeesService } from '../services/attendees.service';
 import { AttendeeRegisterRequestDto } from '../models/attendeeRegisterRequest.dto';
 import { AttendeeUpdateRequestDto } from '../models/attendeeUpdateRequest.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { CurrentUser } from 'src/utils/currentUser.decorator';
 import { AttendeeValidateResponseDto } from '../models/attendeeValidateReponse.dto';
-import { ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
 import { AttendeeLoginRequestDto } from '../models/attendeeLoginRequest.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiBearerAuth()
 @Controller('attendees')
@@ -42,12 +43,17 @@ export class AttendeesController {
     }
 
     @UseGuards(AuthGuard('attendee-jwt'))
+    @UseInterceptors(FileInterceptor('displayPic'))
+    @ApiConsumes('multipart/form-data')
     @Patch()
     @HttpCode(204)
-    async updateAttendee(@CurrentUser(ParseIntPipe) attendeeId: number, @Body() attendeeUpdateRequestDto: AttendeeUpdateRequestDto) {
-        if (!attendeeUpdateRequestDto.firstName && !attendeeUpdateRequestDto.lastName) {
+    async updateAttendee(@CurrentUser(ParseIntPipe) attendeeId: number, @Body() attendeeUpdateRequestDto: AttendeeUpdateRequestDto, @UploadedFile(
+        new ParseFilePipeBuilder().addFileTypeValidator({ fileType: '\.(jpg|jpeg|png|bmp|gif)$' }).addMaxSizeValidator({ maxSize: 3000000 }).build({ errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY })
+    ) displayPic: Express.Multer.File) {
+        if (!attendeeUpdateRequestDto.firstName && !attendeeUpdateRequestDto.lastName && !displayPic) {
             return;
         }
+        attendeeUpdateRequestDto.displayPic = displayPic;
         await this.attendeesService.updateAttendee(attendeeId, attendeeUpdateRequestDto);
     }
 

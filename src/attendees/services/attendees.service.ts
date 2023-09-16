@@ -7,11 +7,17 @@ import { AttendeeRegisterType } from '../models/attendee.types';
 import { AttendeeValidateResponseDto } from '../models/attendeeValidateReponse.dto';
 import { AttendeeGetResponseDto } from '../models/attendeeGetResponse.dto';
 import { AttendeeUpdateRequestDto } from '../models/attendeeUpdateRequest.dto';
+import { S3 } from 'aws-sdk';
+import { ConfigService } from '@nestjs/config';
+import { AttendeeUpdateRequest } from '../models/attendeeUpdateRequest';
 
 @Injectable()
 export class AttendeesService {
-
-    constructor(@InjectRepository(Attendee) private readonly attendeeRepository: Repository<Attendee>, private readonly authService: AuthService) { }
+    private readonly s3Client = new S3({
+        region: this.configService.getOrThrow<string>('AWS_S3_REGION')
+    });
+    constructor(@InjectRepository(Attendee) private readonly attendeeRepository: Repository<Attendee>, private readonly authService: AuthService,
+        private readonly configService: ConfigService) { }
 
     async registerAttendee(attendeeRegisterType: AttendeeRegisterType) {
         attendeeRegisterType.password = await this.authService.hashPassword(attendeeRegisterType.password);
@@ -43,7 +49,23 @@ export class AttendeesService {
         if (!attendee) {
             throw new HttpException('Attendee not found', HttpStatus.NOT_FOUND);
         }
-        await this.attendeeRepository.save({ ...attendee, ...attendeeUpdateRequestDto });
+
+        const attendeeUpdate = new AttendeeUpdateRequest();
+        attendeeUpdate.firstName = attendeeUpdateRequestDto.firstName;
+        attendeeUpdate.lastName = attendeeUpdateRequestDto.lastName;
+
+        //save file to AWS if available
+        if (attendeeUpdateRequestDto.displayPic) {
+            const s3UploadResult = await this.s3Client.upload({
+                Bucket: this.configService.getOrThrow<string>('AWS_S3_ATTENDEE_BUCKET'),
+                Key: `${attendee.id}_${attendee.email}_profile.${attendeeUpdateRequestDto.displayPic.filename.slice(attendeeUpdateRequestDto.displayPic.originalname.lastIndexOf('.') + 1)}`,
+                Body: attendeeUpdateRequestDto.displayPic.buffer
+            }).promise().catch((error) => {
+                throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
+            });
+            attendeeUpdate.displayPic = s3UploadResult.Location;
+        }
+        await this.attendeeRepository.save({ ...attendee, ...attendeeUpdate });
     }
 
     async deleteAttendee(attendeeId: number) {

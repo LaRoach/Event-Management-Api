@@ -6,6 +6,6 @@ export class AppService {
   constructor(private configService: ConfigService) { }
 
   healthCheck(): string {
-    return `${this.configService.get<string>('API_NAME')} ${this.configService.get<string>('API_VERSION')}`;
+    return `${this.configService.getOrThrow<string>('API_NAME')} ${this.configService.getOrThrow<string>('API_VERSION')}`;
   }
 }
