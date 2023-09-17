@@ -1,15 +1,16 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpException, HttpStatus, Param, ParseFilePipeBuilder, ParseIntPipe, Patch, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, FileTypeValidator, Get, HttpCode, HttpException, HttpStatus, MaxFileSizeValidator, Param, ParseFilePipe, ParseIntPipe, Patch, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { OrganizersService } from '../services/organizers.service';
 import { OrganizerRegisterRequestDto } from '../models/organizerRegisterRequest.dto';
 import { OrganizerUpdateRequestDto } from '../models/organizerUpdateRequest.dto';
 import { OrganizerValidateResponseDto } from '../models/organizerValidateResponse.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { CurrentUser } from 'src/utils/currentUser.decorator';
-import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { OrganizerLoginRequestDto } from '../models/organizerLoginRequest.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiBearerAuth()
+@ApiTags('Organizers')
 @Controller('organizers')
 export class OrganizersController {
 
@@ -42,13 +43,22 @@ export class OrganizersController {
         return await this.organizersService.getOrganizer(organizerId);
     }
 
+    @Get('/all')
+    async getAllOrganizers() {
+        return await this.organizersService.getAllOrganizers();
+    }
+
     @UseGuards(AuthGuard('organizer-jwt'))
     @UseInterceptors(FileInterceptor('displayPic'))
     @ApiConsumes('multipart/form-data')
     @Patch()
     @HttpCode(204)
     async updateOrganizer(@CurrentUser(ParseIntPipe) organizerId: number, @Body() organizerUpdateRequestDto: OrganizerUpdateRequestDto, @UploadedFile(
-        new ParseFilePipeBuilder().addFileTypeValidator({ fileType: '\.(jpg|jpeg|png|bmp|gif)$' }).addMaxSizeValidator({ maxSize: 3000000 }).build({ errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY })
+        new ParseFilePipe({
+            validators: [new FileTypeValidator({ fileType: '.(jpg|jpeg|png|bmp|gif)' }), new MaxFileSizeValidator({ maxSize: 3000000 })],
+            fileIsRequired: false,
+            errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY
+        })
     ) displayPic: Express.Multer.File) {
         if (!organizerUpdateRequestDto.name && !displayPic) {
             return;

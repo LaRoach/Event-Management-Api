@@ -4,13 +4,13 @@ export class AttendeeUpdateRequest {
 
     @IsOptional()
     @Length(1, 150)
-    firstName: string;
+    firstName?: string;
 
     @IsOptional()
     @Length(1, 150)
-    lastName: string;
+    lastName?: string;
 
     @IsOptional()
     @Length(1, 400)
-    displayPic: string
+    displayPic?: string;
 }

@@ -5,40 +5,38 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { EventCreateRequestDto } from '../models/eventCreateRequest.dto';
 import { EventUpdateRequestDto } from '../models/eventUpdateRequest.dto';
 import { Attendee } from 'src/attendees/models/attendee.entity';
+import { Organizer } from 'src/organizers/models/organizer.entity';
 
 @Injectable()
 export class EventsService {
 
-    constructor(@InjectRepository(Event) private readonly eventRepository: Repository<Event>, @InjectRepository(Attendee) private readonly attendeeRepository: Repository<Attendee>) { }
+    constructor(@InjectRepository(Event) private readonly eventRepository: Repository<Event>, @InjectRepository(Attendee) private readonly attendeeRepository: Repository<Attendee>,
+        @InjectRepository(Organizer) private readonly organizerRepository: Repository<Organizer>) { }
 
     async getEvents(): Promise<Event[]> {
-        return await this.eventRepository.find();
+        return await this.eventRepository.find({
+            relations: ['organizer'],
+            select: {
+                organizer: {
+                    id: true,
+                    name: true
+                }
+            }
+        });
     }
 
-    async getEvent(id: number): Promise<Event> {
+    async getEvent(id: number) {
         return await this.eventRepository.findOne({
             where: {
                 id: id
             },
-            relations: ['organizer', 'organizer.id', 'organizer.email']
-        });
-    }
-
-    async getEventsByOrganizerName(organizerName: string): Promise<Event[]> {
-        return await this.eventRepository.find({
-            where: {
-                name: organizerName
-            },
-            relations: ['organizer', 'organizer.id', 'organizer.email']
-        });
-    }
-
-    async getEventsByLocation(location: string): Promise<Event[]> {
-        return await this.eventRepository.find({
-            where: {
-                location: location
-            },
-            relations: ['organizer', 'organizer.id', 'organizer.email']
+            relations: ['organizer'],
+            select: {
+                organizer: {
+                    id: true,
+                    name: true
+                }
+            }
         });
     }
 
@@ -46,12 +44,16 @@ export class EventsService {
         const event = await this.eventRepository.findOne({
             where: {
                 id: id
+            },
+            relations: ['attendees'],
+            select: {
+                attendees: true
             }
         });
         if (!event) {
             throw new HttpException('Event not found', HttpStatus.NOT_FOUND);
         };
-        return event.maxAttendents;
+        return event.attendees.length;
     }
 
     async getAttendeeEmailForEvent(id: number): Promise<string[]> {
@@ -59,23 +61,54 @@ export class EventsService {
         const event = await this.eventRepository.findOne({
             where: {
                 id: id
+            },
+            relations: ['attendees'],
+            select: {
+                attendees: {
+                    id: true,
+                    email: true
+                }
             }
         });
         if (!event) {
             throw new HttpException('Event not found', HttpStatus.NOT_FOUND);
         };
 
-        event.attendees.forEach((attendee) => {
-            attendeeEmails.push(attendee.email);
-        });
+        console.log(event);
+
+        if (event.attendees) {
+            event.attendees.forEach((attendee) => {
+                attendeeEmails.push(attendee.email);
+            });
+        }
 
         return attendeeEmails;
     }
 
     async createEvent(organizerId: number, eventCreateRequestDto: EventCreateRequestDto) {
-        const event = this.eventRepository.create(eventCreateRequestDto)
-        event.organizer.id = organizerId;
-        return await this.eventRepository.save(event);
+        const event = this.eventRepository.create(eventCreateRequestDto);
+
+        const organizerToAdd = await this.organizerRepository.findOne({
+            where: {
+                id: organizerId
+            }
+        })
+        event.organizer = organizerToAdd;
+        const { id } = await this.eventRepository.save(event);
+
+        const createdEvent = await this.eventRepository.findOne({
+            where: {
+                id: id
+            },
+            relations: ['organizer'],
+            select: {
+                organizer: {
+                    id: true,
+                    name: true
+                }
+            }
+        });
+        return createdEvent;
     }
 
     async updateEvent(event: Event, eventUpdateRequestDto: EventUpdateRequestDto) {
@@ -99,7 +132,12 @@ export class EventsService {
         if (!attendee) {
             throw new HttpException('Attendee not found', HttpStatus.NOT_FOUND);
         }
-        event.attendees.push(attendee);
+
+        const currentEventAttendeeCount = await this.getAttendeeCountForEvent(event.id);
+        if (currentEventAttendeeCount >= event.maxAttendents) {
+            throw new HttpException('This event is unfortunately sold out', HttpStatus.BAD_REQUEST);
+        }
+        event.attendees = [attendee];
         await this.eventRepository.save(event);
     }
 }

@@ -23,11 +23,11 @@ export class Event {
     @Column()
     maxAttendents: number
 
-    @ManyToOne(() => Organizer, (organizer) => organizer.events, { nullable: false })
+    @ManyToOne(() => Organizer, (organizer) => organizer.events, { nullable: false, onDelete: 'CASCADE' })
     @JoinColumn({ name: 'organizerId' })
     organizer: Organizer
 
-    @ManyToMany(() => Event)
+    @ManyToMany(() => Attendee)
     @JoinTable({
         name: "attendees_events",
         joinColumn: {

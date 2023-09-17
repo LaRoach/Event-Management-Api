@@ -4,16 +4,20 @@ import { AppService } from './app.service';
 import { OrganizersModule } from './organizers/organizers.module';
 import { AttendeesModule } from './attendees/attendees.module';
 import { EventsModule } from './events/events.module';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TypeOrmConfigService } from './db/TypeOrmConfigService';
 import { AuthModule } from './auth/auth.module';
-import { JwtModule } from '@nestjs/jwt';
+import { AutomapperModule } from '@automapper/nestjs';
+import { classes } from '@automapper/classes';
 
 @Module({
   imports: [TypeOrmModule.forRootAsync({
     useClass: TypeOrmConfigService,
-  }), ConfigModule.forRoot({ isGlobal: true }), OrganizersModule, AttendeesModule, EventsModule, AuthModule],
+  }), ConfigModule.forRoot({ isGlobal: true }),
+  AutomapperModule.forRoot({
+    strategyInitializer: classes()
+  }), OrganizersModule, AttendeesModule, EventsModule, AuthModule],
   controllers: [AppController],
   providers: [AppService],
 })

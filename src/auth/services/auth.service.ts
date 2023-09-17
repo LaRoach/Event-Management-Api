@@ -30,7 +30,6 @@ export class AuthService {
         const attendee = await this.attendeeRepository.findOne({
             where: { email: email }
         });
-
         if (attendee && await bcrypt.compare(password, attendee.password)) {
             const { password, displayPic, ...result } = attendee;
             return result;

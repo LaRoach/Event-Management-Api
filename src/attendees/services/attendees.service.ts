@@ -14,7 +14,9 @@ import { AttendeeUpdateRequest } from '../models/attendeeUpdateRequest';
 @Injectable()
 export class AttendeesService {
     private readonly s3Client = new S3({
-        region: this.configService.getOrThrow<string>('AWS_S3_REGION')
+        region: this.configService.getOrThrow<string>('AWS_S3_REGION'),
+        accessKeyId: this.configService.getOrThrow<string>('AWS_ACCESS_KEY_ID'),
+        secretAccessKey: this.configService.getOrThrow<string>('AWS_SECRET_ACCESS_KEY'),
     });
     constructor(@InjectRepository(Attendee) private readonly attendeeRepository: Repository<Attendee>, private readonly authService: AuthService,
         private readonly configService: ConfigService) { }
@@ -51,14 +53,20 @@ export class AttendeesService {
         }
 
         const attendeeUpdate = new AttendeeUpdateRequest();
-        attendeeUpdate.firstName = attendeeUpdateRequestDto.firstName;
-        attendeeUpdate.lastName = attendeeUpdateRequestDto.lastName;
+
+        if (attendeeUpdateRequestDto.firstName) {
+            attendeeUpdate.firstName = attendeeUpdateRequestDto.firstName;
+        }
+
+        if (attendeeUpdateRequestDto.lastName) {
+            attendeeUpdate.lastName = attendeeUpdateRequestDto.lastName;
+        }
 
         //save file to AWS if available
         if (attendeeUpdateRequestDto.displayPic) {
             const s3UploadResult = await this.s3Client.upload({
                 Bucket: this.configService.getOrThrow<string>('AWS_S3_ATTENDEE_BUCKET'),
-                Key: `${attendee.id}_${attendee.email}_profile.${attendeeUpdateRequestDto.displayPic.filename.slice(attendeeUpdateRequestDto.displayPic.originalname.lastIndexOf('.') + 1)}`,
+                Key: `${attendee.id}_${attendee.email}_profile.${attendeeUpdateRequestDto.displayPic.originalname.slice(attendeeUpdateRequestDto.displayPic.originalname.lastIndexOf('.') + 1)}`,
                 Body: attendeeUpdateRequestDto.displayPic.buffer
             }).promise().catch((error) => {
                 throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);

@@ -4,9 +4,10 @@ import { EventCreateRequestDto } from '../models/eventCreateRequest.dto';
 import { EventUpdateRequestDto } from '../models/eventUpdateRequest.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { CurrentUser } from 'src/utils/currentUser.decorator';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 @ApiBearerAuth()
+@ApiTags('Events')
 @Controller('events')
 export class EventsController {
 
@@ -27,7 +28,7 @@ export class EventsController {
     @Post()
     createEvent(@CurrentUser(ParseIntPipe) organizerId: number, @Body() eventCreateRequestDto: EventCreateRequestDto) {
         if (!eventCreateRequestDto.name || !eventCreateRequestDto.description || !eventCreateRequestDto.date ||
-            !eventCreateRequestDto.location || eventCreateRequestDto.maxAttendents) {
+            !eventCreateRequestDto.location || !eventCreateRequestDto.maxAttendents) {
             throw new HttpException('Required fields not provided', HttpStatus.BAD_REQUEST);
         }
         if (eventCreateRequestDto.date < new Date()) {
@@ -83,16 +84,6 @@ export class EventsController {
         }
     }
 
-    @Get('/organizer/:organizerName')
-    async filterEventsByOrganizerName(@Param('organizerName') organizerName: string) {
-        return await this.eventsService.getEventsByOrganizerName(organizerName);
-    }
-
-    @Get('/location/:location')
-    async filterEventsByLocation(@Param('location') location: string) {
-        return await this.eventsService.getEventsByLocation(location);
-    }
-
     @Get('/attendeeCount/:id')
     async getCurrentAttendeeCountForEvent(@Param('id', ParseIntPipe) id: number) {
         return await this.eventsService.getAttendeeCountForEvent(id);
@@ -105,7 +96,7 @@ export class EventsController {
     }
 
     @UseGuards(AuthGuard('attendee-jwt'))
-    @Put('/:id/attendee//signUp')
+    @Put('/:id/attendee/signUp')
     @HttpCode(204)
     async signUpAttendeeToEvent(@CurrentUser(ParseIntPipe) attendeeId: number, @Param('id', ParseIntPipe) id: number) {
         await this.eventsService.signUpAttendeeToEvent(attendeeId, id);

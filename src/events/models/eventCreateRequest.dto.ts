@@ -1,4 +1,5 @@
-import { IsDate, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsNotEmpty, IsNumber, IsOptional, IsString, MinDate, minDate } from 'class-validator';
 export class EventCreateRequestDto {
 
     @IsNotEmpty()
@@ -10,7 +11,8 @@ export class EventCreateRequestDto {
     description: string
 
     @IsNotEmpty()
-    @IsDate()
+    @Transform(({ value }) => value && new Date(value))
+    @MinDate(new Date)
     date: Date
 
     @IsNotEmpty()

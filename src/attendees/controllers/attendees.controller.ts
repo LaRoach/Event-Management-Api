@@ -1,15 +1,16 @@
-import { Body, Controller, Delete, Get, HttpCode, Patch, Post, ParseIntPipe, HttpException, HttpStatus, UseGuards, UseInterceptors, UploadedFile, ParseFilePipeBuilder } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Patch, Post, ParseIntPipe, HttpException, HttpStatus, UseGuards, UseInterceptors, UploadedFile, ParseFilePipe, FileTypeValidator, MaxFileSizeValidator } from '@nestjs/common';
 import { AttendeesService } from '../services/attendees.service';
 import { AttendeeRegisterRequestDto } from '../models/attendeeRegisterRequest.dto';
 import { AttendeeUpdateRequestDto } from '../models/attendeeUpdateRequest.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { CurrentUser } from 'src/utils/currentUser.decorator';
 import { AttendeeValidateResponseDto } from '../models/attendeeValidateReponse.dto';
-import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { AttendeeLoginRequestDto } from '../models/attendeeLoginRequest.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiBearerAuth()
+@ApiTags('Attendees')
 @Controller('attendees')
 export class AttendeesController {
 
@@ -33,7 +34,7 @@ export class AttendeesController {
     @UseGuards(AuthGuard('attendee-local'))
     @Post('/login')
     async loginAttendee(@CurrentUser() attendeeValidateResponseDto: AttendeeValidateResponseDto) {
-        return { organizerEmail: attendeeValidateResponseDto.email, token: await this.attendeesService.loginAttendee(attendeeValidateResponseDto) };
+        return { attendeeEmail: attendeeValidateResponseDto.email, token: await this.attendeesService.loginAttendee(attendeeValidateResponseDto) };
     }
 
     @UseGuards(AuthGuard('attendee-jwt'))
@@ -48,7 +49,11 @@ export class AttendeesController {
     @Patch()
     @HttpCode(204)
     async updateAttendee(@CurrentUser(ParseIntPipe) attendeeId: number, @Body() attendeeUpdateRequestDto: AttendeeUpdateRequestDto, @UploadedFile(
-        new ParseFilePipeBuilder().addFileTypeValidator({ fileType: '\.(jpg|jpeg|png|bmp|gif)$' }).addMaxSizeValidator({ maxSize: 3000000 }).build({ errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY })
+        new ParseFilePipe({
+            validators: [new FileTypeValidator({ fileType: '.(jpg|jpeg|png|bmp|gif)' }), new MaxFileSizeValidator({ maxSize: 3000000 })],
+            fileIsRequired: false,
+            errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY
+        })
     ) displayPic: Express.Multer.File) {
         if (!attendeeUpdateRequestDto.firstName && !attendeeUpdateRequestDto.lastName && !displayPic) {
             return;

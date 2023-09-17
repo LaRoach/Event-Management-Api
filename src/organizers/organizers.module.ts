@@ -9,9 +9,11 @@ import { JwtModule } from '@nestjs/jwt';
 import { JwtConfigService } from 'src/jwt/JwtConfigService';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { OrganizerMapperProfile } from './models/organizerMapperProfile';
+import { Event } from 'src/events/models/event.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Organizer, Attendee]),
+  imports: [TypeOrmModule.forFeature([Organizer, Attendee, Event]),
   JwtModule.registerAsync({
     useClass: JwtConfigService
   }), HttpModule.registerAsync({
@@ -23,6 +25,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     inject: [ConfigService]
   })],
   controllers: [OrganizersController],
-  providers: [OrganizersService, AuthService]
+  providers: [OrganizersService, AuthService, OrganizerMapperProfile]
 })
 export class OrganizersModule { }
