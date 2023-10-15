@@ -10,7 +10,7 @@ export class Organizer {
     id: number;
 
     @AutoMap()
-    @Column()
+    @Column({ unique: true })
     email: string;
 
     @Column()

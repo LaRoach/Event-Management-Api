@@ -74,8 +74,6 @@ export class EventsService {
             throw new HttpException('Event not found', HttpStatus.NOT_FOUND);
         };
 
-        console.log(event);
-
         if (event.attendees) {
             event.attendees.forEach((attendee) => {
                 attendeeEmails.push(attendee.email);

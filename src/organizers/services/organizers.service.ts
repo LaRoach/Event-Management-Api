@@ -31,9 +31,20 @@ export class OrganizersService {
         private readonly configService: ConfigService, @InjectMapper() private readonly classMapper: Mapper) { }
 
     async registerOrganizer(organizerRegisterType: OrganizerRegisterType) {
+        const checkOrganizer = await this.organizerRepository.findOne({
+            where: {
+                email: organizerRegisterType.email
+            }
+        })
+        if (checkOrganizer) {
+            throw new HttpException('Email already taken', HttpStatus.BAD_REQUEST);
+        }
+
         organizerRegisterType.password = await this.authService.hashPassword(organizerRegisterType.password);
         const organizerRegister = this.organizerRepository.create(organizerRegisterType);
-        return await this.organizerRepository.save(organizerRegister);
+        const organizer = await this.organizerRepository.save(organizerRegister);
+        delete organizer.password;
+        return organizer;
     }
 
     async loginOrganizer(organizerValidateResponseDto: OrganizerValidateResponseDto): Promise<string> {
@@ -99,7 +110,7 @@ export class OrganizersService {
     async checkWeatherForecast(city: string) {
         const { data } = await firstValueFrom(this.httpService.get(`http://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${this.configService.getOrThrow<string>('WEATHER_APIKEY')}`).pipe(
             catchError((error: AxiosError) => {
-                throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+                throw new HttpException(error.message, error.status);
             })));
         return data;
     }

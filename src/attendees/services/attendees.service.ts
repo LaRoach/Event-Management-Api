@@ -22,9 +22,20 @@ export class AttendeesService {
         private readonly configService: ConfigService) { }
 
     async registerAttendee(attendeeRegisterType: AttendeeRegisterType) {
+        const checkAttendee = await this.attendeeRepository.findOne({
+            where: {
+                email: attendeeRegisterType.email
+            }
+        })
+        if (checkAttendee) {
+            throw new HttpException('Email already taken', HttpStatus.BAD_REQUEST);
+        }
+
         attendeeRegisterType.password = await this.authService.hashPassword(attendeeRegisterType.password);
         const attendeeRegister = this.attendeeRepository.create(attendeeRegisterType);
-        return await this.attendeeRepository.save(attendeeRegister);
+        const attendee = await this.attendeeRepository.save(attendeeRegister);
+        delete attendee.password;
+        return attendee;
     }
 
     async loginAttendee(attendeeValidateResponseDto: AttendeeValidateResponseDto): Promise<string> {

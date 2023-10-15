@@ -1,5 +1,5 @@
 import { Event } from "src/events/models/event.entity";
-import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn, Unique } from "typeorm";
 
 @Entity()
 export class Attendee {
@@ -7,7 +7,7 @@ export class Attendee {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
+    @Column({ unique: true })
     email: string;
 
     @Column()
@@ -22,3 +22,4 @@ export class Attendee {
     @Column({ nullable: true })
     displayPic: string
 }
+
